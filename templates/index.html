@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fundamentus - Análise de Ações</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Fundamentus</h1>
+            <p class="subtitle">Análise Fundamentalista de Ações Brasileiras</p>
+        </header>
+
+        <main>
+            <section class="search-section">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Buscar empresa (ex: PETR4, VALE3, ITUB4...)">
+                    <button id="searchBtn">Buscar</button>
+                </div>
+                <div class="filter-info">
+                    <span id="stockCount">Carregando...</span>
+                </div>
+            </section>
+
+            <section class="content-wrapper">
+                <aside class="stock-list-section">
+                    <h2>Empresas</h2>
+                    <div class="stock-list" id="stockList">
+                        <div class="loading">Carregando dados...</div>
+                    </div>
+                </aside>
+
+                <section class="details-section">
+                    <h2>Detalhes da Empresa</h2>
+                    <div id="stockDetails" class="stock-details">
+                        <div class="placeholder">
+                            <p>Selecione uma empresa na lista ao lado para ver os detalhes</p>
+                        </div>
+                    </div>
+                </section>
+            </section>
+
+            <section class="comparison-section" id="comparisonSection" style="display: none;">
+                <h2>Comparativo de Empresas Selecionadas</h2>
+                <div class="comparison-actions">
+                    <button id="clearComparison" class="btn-secondary">Limpar Seleção</button>
+                </div>
+                <div class="comparison-table-wrapper">
+                    <table id="comparisonTable" class="comparison-table">
+                        <thead id="comparisonHead"></thead>
+                        <tbody id="comparisonBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Dados extraídos de <a href="http://www.fundamentus.com.br" target="_blank">fundamentus.com.br</a></p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
