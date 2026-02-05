@@ -418,10 +418,18 @@ header h1 {
 .detail-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     padding-bottom: 24px;
     border-bottom: 1px solid var(--border-color);
     margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.detail-header .header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .detail-header .ticker-name {
@@ -433,10 +441,92 @@ header h1 {
     background-clip: text;
 }
 
+.detail-header .company-name {
+    font-size: 1.1rem;
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.detail-header .company-sector {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.detail-header .header-price {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
 .detail-header .current-price {
     font-size: 2rem;
     font-weight: 700;
     color: var(--success-color);
+}
+
+.detail-header .price-change {
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background-color: var(--bg-color);
+}
+
+.detail-header .price-change.positive {
+    color: var(--success-color);
+    background-color: rgba(16, 185, 129, 0.1);
+}
+
+.detail-header .price-change.negative {
+    color: var(--danger-color);
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Market Data Section */
+.market-data-section {
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.market-data-section h3,
+.fundamentals-section h3 {
+    font-size: 1rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.market-data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.market-item {
+    background: var(--bg-color);
+    padding: 14px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.market-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+.market-value {
+    font-size: 1rem;
+    color: var(--text-color);
+    font-weight: 600;
 }
 
 .indicators-grid {

@@ -218,8 +218,8 @@ function selectStock(ticker) {
     renderStockDetails(ticker);
 }
 
-// Renderizar detalhes da ação
-function renderStockDetails(ticker) {
+// Renderizar detalhes da ação (com dados combinados)
+async function renderStockDetails(ticker) {
     const detailsEl = document.getElementById('stockDetails');
     const stock = state.stocks[ticker];
 
@@ -228,10 +228,64 @@ function renderStockDetails(ticker) {
         return;
     }
 
+    // Mostra loading enquanto busca dados complementares
+    detailsEl.innerHTML = `
+        <div class="detail-header">
+            <div>
+                <span class="ticker-name">${ticker}</span>
+                <span class="company-name">Carregando...</span>
+            </div>
+            <span class="current-price">${formatValue(stock.Cotacao, 'currency')}</span>
+        </div>
+        <div class="loading">Carregando dados complementares...</div>
+    `;
+
+    // Busca dados detalhados da API
+    let detailedData = null;
+    try {
+        const response = await fetch(`/api/stocks/${ticker}`);
+        if (response.ok) {
+            detailedData = await response.json();
+        }
+    } catch (error) {
+        console.error('Erro ao buscar dados detalhados:', error);
+    }
+
+    // Renderiza com os dados disponíveis
+    renderDetailedStock(ticker, stock, detailedData);
+}
+
+// Renderiza os detalhes completos da ação
+function renderDetailedStock(ticker, fundamentusData, detailedData) {
+    const detailsEl = document.getElementById('stockDetails');
+    const brapi = detailedData?.brapi || {};
+
+    // Informações da empresa
+    const companyName = brapi.longName || brapi.shortName || ticker;
+    const sector = brapi.sector || '';
+    const industry = brapi.industry || '';
+
+    // Dados de mercado
+    const marketPrice = brapi.regularMarketPrice || fundamentusData.Cotacao;
+    const marketChange = brapi.regularMarketChange;
+    const marketChangePercent = brapi.regularMarketChangePercent;
+    const marketCap = brapi.marketCap;
+    const volume = brapi.regularMarketVolume;
+    const dayHigh = brapi.regularMarketDayHigh;
+    const dayLow = brapi.regularMarketDayLow;
+    const week52High = brapi.fiftyTwoWeekHigh;
+    const week52Low = brapi.fiftyTwoWeekLow;
+    const avg50 = brapi.fiftyDayAverage;
+    const avg200 = brapi.twoHundredDayAverage;
+
+    // Classe para variação
+    const changeClass = marketChange > 0 ? 'positive' : marketChange < 0 ? 'negative' : '';
+
+    // Indicadores fundamentalistas
     const indicatorsHTML = Object.entries(indicatorConfig)
         .filter(([key]) => key !== 'Cotacao')
         .map(([key, config]) => {
-            const value = stock[key];
+            const value = fundamentusData[key];
             const valueClass = getValueClass(value, key);
             return `
                 <div class="indicator-card">
@@ -241,15 +295,77 @@ function renderStockDetails(ticker) {
             `;
         }).join('');
 
+    // Dados de mercado HTML
+    const marketDataHTML = brapi.regularMarketPrice ? `
+        <div class="market-data-section">
+            <h3>Dados de Mercado</h3>
+            <div class="market-data-grid">
+                <div class="market-item">
+                    <span class="market-label">Volume</span>
+                    <span class="market-value">${volume ? formatLargeNumber(volume) : '-'}</span>
+                </div>
+                <div class="market-item">
+                    <span class="market-label">Market Cap</span>
+                    <span class="market-value">${marketCap ? formatLargeNumber(marketCap) : '-'}</span>
+                </div>
+                <div class="market-item">
+                    <span class="market-label">Mín/Máx Dia</span>
+                    <span class="market-value">${dayLow ? `R$ ${dayLow.toFixed(2)} - ${dayHigh.toFixed(2)}` : '-'}</span>
+                </div>
+                <div class="market-item">
+                    <span class="market-label">Mín/Máx 52 sem</span>
+                    <span class="market-value">${week52Low ? `R$ ${week52Low.toFixed(2)} - ${week52High.toFixed(2)}` : '-'}</span>
+                </div>
+                <div class="market-item">
+                    <span class="market-label">Média 50 dias</span>
+                    <span class="market-value">${avg50 ? `R$ ${avg50.toFixed(2)}` : '-'}</span>
+                </div>
+                <div class="market-item">
+                    <span class="market-label">Média 200 dias</span>
+                    <span class="market-value">${avg200 ? `R$ ${avg200.toFixed(2)}` : '-'}</span>
+                </div>
+            </div>
+        </div>
+    ` : '';
+
     detailsEl.innerHTML = `
         <div class="detail-header">
-            <span class="ticker-name">${ticker}</span>
-            <span class="current-price">${formatValue(stock.Cotacao, 'currency')}</span>
+            <div class="header-info">
+                <span class="ticker-name">${ticker}</span>
+                ${companyName !== ticker ? `<span class="company-name">${companyName}</span>` : ''}
+                ${sector ? `<span class="company-sector">${sector}${industry ? ` • ${industry}` : ''}</span>` : ''}
+            </div>
+            <div class="header-price">
+                <span class="current-price">${formatValue(marketPrice, 'currency')}</span>
+                ${marketChange !== undefined ? `
+                    <span class="price-change ${changeClass}">
+                        ${marketChange > 0 ? '+' : ''}${marketChange.toFixed(2)} (${marketChangePercent.toFixed(2)}%)
+                    </span>
+                ` : ''}
+            </div>
         </div>
-        <div class="indicators-grid">
-            ${indicatorsHTML}
+        ${marketDataHTML}
+        <div class="fundamentals-section">
+            <h3>Indicadores Fundamentalistas</h3>
+            <div class="indicators-grid">
+                ${indicatorsHTML}
+            </div>
         </div>
     `;
+}
+
+// Formatar números grandes (milhões, bilhões)
+function formatLargeNumber(num) {
+    if (num >= 1e12) {
+        return `R$ ${(num / 1e12).toFixed(2)}T`;
+    } else if (num >= 1e9) {
+        return `R$ ${(num / 1e9).toFixed(2)}B`;
+    } else if (num >= 1e6) {
+        return `R$ ${(num / 1e6).toFixed(2)}M`;
+    } else if (num >= 1e3) {
+        return `R$ ${(num / 1e3).toFixed(2)}K`;
+    }
+    return num.toLocaleString('pt-BR');
 }
 
 // Toggle comparação
