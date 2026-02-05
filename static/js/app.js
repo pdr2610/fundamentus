@@ -352,7 +352,8 @@ function renderBarChart(labels, data, config) {
                 data: data,
                 backgroundColor: labels.map((_, i) => chartColors[i % chartColors.length]),
                 borderColor: labels.map((_, i) => chartColors[i % chartColors.length]),
-                borderWidth: 1
+                borderWidth: 1,
+                borderRadius: 6
             }]
         },
         options: {
@@ -363,13 +364,17 @@ function renderBarChart(labels, data, config) {
                 },
                 title: {
                     display: true,
-                    text: `Comparativo: ${config.label}`
+                    text: `Comparativo: ${config.label}`,
+                    color: '#f1f5f9',
+                    font: { size: 14, weight: '600' }
                 }
             },
             scales: {
                 y: {
                     beginAtZero: false,
+                    grid: { color: '#334155' },
                     ticks: {
+                        color: '#94a3b8',
                         callback: function(value) {
                             if (config.format === 'percent') {
                                 return value.toFixed(2) + '%';
@@ -379,6 +384,10 @@ function renderBarChart(labels, data, config) {
                             return value.toFixed(2);
                         }
                     }
+                },
+                x: {
+                    grid: { color: '#334155' },
+                    ticks: { color: '#94a3b8' }
                 }
             }
         }
@@ -438,13 +447,22 @@ function renderRadarChart() {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Comparativo Geral (Normalizado)'
+                    text: 'Comparativo Geral (Normalizado)',
+                    color: '#f1f5f9',
+                    font: { size: 14, weight: '600' }
+                },
+                legend: {
+                    labels: { color: '#94a3b8' }
                 }
             },
             scales: {
                 r: {
                     beginAtZero: true,
-                    max: 100
+                    max: 100,
+                    grid: { color: '#334155' },
+                    angleLines: { color: '#334155' },
+                    pointLabels: { color: '#94a3b8', font: { size: 11 } },
+                    ticks: { color: '#94a3b8', backdropColor: 'transparent' }
                 }
             }
         }
