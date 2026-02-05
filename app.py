@@ -95,8 +95,20 @@ def combine_stock_data(ticker: str, fundamentus_data: dict, brapi_data: dict = N
 
 @app.route("/")
 def index():
-    """Página principal da aplicação."""
-    return render_template('index.html')
+    """Página inicial - Hub de Notícias."""
+    return render_template('home.html', active_page='home')
+
+
+@app.route("/fundamentos")
+def fundamentos():
+    """Página de análise fundamentalista."""
+    return render_template('fundamentos.html', active_page='fundamentos')
+
+
+@app.route("/valuation")
+def valuation():
+    """Página de valuation."""
+    return render_template('valuation.html', active_page='valuation')
 
 
 @app.route("/api/stocks")
@@ -163,6 +175,64 @@ def api_compare():
             results[ticker] = combine_stock_data(ticker, fundamentus_data[ticker], brapi_data)
 
     return jsonify(results)
+
+
+# Principais ações do Ibovespa
+IBOVESPA_STOCKS = [
+    'PETR4', 'VALE3', 'ITUB4', 'BBDC4', 'B3SA3', 'ABEV3', 'WEGE3', 'RENT3',
+    'BBAS3', 'ITSA4', 'RADL3', 'SUZB3', 'JBSS3', 'GGBR4', 'LREN3', 'RAIL3',
+    'EQTL3', 'VIVT3', 'BPAC11', 'PRIO3', 'CSNA3', 'CSAN3', 'MGLU3', 'HAPV3'
+]
+
+
+@app.route("/api/ibovespa")
+def api_ibovespa():
+    """Retorna cotações das principais ações do Ibovespa."""
+    results = []
+    brapi_data = fetch_multiple_quotes(IBOVESPA_STOCKS)
+
+    for ticker in IBOVESPA_STOCKS:
+        if ticker in brapi_data:
+            data = brapi_data[ticker]
+            results.append({
+                'ticker': ticker,
+                'shortName': data.get('shortName', ''),
+                'price': data.get('regularMarketPrice'),
+                'change': data.get('regularMarketChange'),
+                'changePercent': data.get('regularMarketChangePercent'),
+                'volume': data.get('regularMarketVolume'),
+                'marketCap': data.get('marketCap')
+            })
+
+    return jsonify(results)
+
+
+@app.route("/api/market-movers")
+def api_market_movers():
+    """Retorna maiores altas, baixas e volume do dia."""
+    brapi_data = fetch_multiple_quotes(IBOVESPA_STOCKS)
+
+    stocks_list = []
+    for ticker, data in brapi_data.items():
+        if data.get('regularMarketChangePercent') is not None:
+            stocks_list.append({
+                'ticker': ticker,
+                'shortName': data.get('shortName', ''),
+                'price': data.get('regularMarketPrice'),
+                'change': data.get('regularMarketChange'),
+                'changePercent': data.get('regularMarketChangePercent'),
+                'volume': data.get('regularMarketVolume', 0)
+            })
+
+    # Ordenar por variação percentual
+    sorted_by_change = sorted(stocks_list, key=lambda x: x['changePercent'] or 0, reverse=True)
+    sorted_by_volume = sorted(stocks_list, key=lambda x: x['volume'] or 0, reverse=True)
+
+    return jsonify({
+        'winners': sorted_by_change[:5],
+        'losers': sorted_by_change[-5:][::-1],
+        'volume': sorted_by_volume[:5]
+    })
 
 
 if __name__ == '__main__':

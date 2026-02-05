@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Análise Fundamentalista{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Busca e Filtros -->
+    <section class="search-section">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Buscar empresa (ex: PETR4, VALE3, ITUB4...)">
+            <button id="searchBtn">Buscar</button>
+        </div>
+        <div class="filter-info">
+            <span id="stockCount">Carregando...</span>
+        </div>
+    </section>
+
+    <!-- Filtros Avançados -->
+    <section class="filters-section">
+        <div class="filters-header">
+            <h3>Filtros Avançados</h3>
+            <button id="toggleFilters" class="btn-toggle">Mostrar/Ocultar</button>
+        </div>
+        <div class="filters-content" id="filtersContent" style="display: none;">
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label>P/L</label>
+                    <div class="filter-range">
+                        <input type="number" id="plMin" placeholder="Mín" step="0.1">
+                        <span>até</span>
+                        <input type="number" id="plMax" placeholder="Máx" step="0.1">
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>P/VP</label>
+                    <div class="filter-range">
+                        <input type="number" id="pvpMin" placeholder="Mín" step="0.1">
+                        <span>até</span>
+                        <input type="number" id="pvpMax" placeholder="Máx" step="0.1">
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Dividend Yield (%)</label>
+                    <div class="filter-range">
+                        <input type="number" id="dyMin" placeholder="Mín" step="0.1">
+                        <span>até</span>
+                        <input type="number" id="dyMax" placeholder="Máx" step="0.1">
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>ROE (%)</label>
+                    <div class="filter-range">
+                        <input type="number" id="roeMin" placeholder="Mín" step="0.1">
+                        <span>até</span>
+                        <input type="number" id="roeMax" placeholder="Máx" step="0.1">
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>ROIC (%)</label>
+                    <div class="filter-range">
+                        <input type="number" id="roicMin" placeholder="Mín" step="0.1">
+                        <span>até</span>
+                        <input type="number" id="roicMax" placeholder="Máx" step="0.1">
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Margem Líquida (%)</label>
+                    <div class="filter-range">
+                        <input type="number" id="margemMin" placeholder="Mín" step="0.1">
+                        <span>até</span>
+                        <input type="number" id="margemMax" placeholder="Máx" step="0.1">
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Liquidez Corrente</label>
+                    <div class="filter-range">
+                        <input type="number" id="liqCorrMin" placeholder="Mín" step="0.1">
+                        <span>até</span>
+                        <input type="number" id="liqCorrMax" placeholder="Máx" step="0.1">
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Dív.Bruta/Patrim.</label>
+                    <div class="filter-range">
+                        <input type="number" id="divBrutaMin" placeholder="Mín" step="0.1">
+                        <span>até</span>
+                        <input type="number" id="divBrutaMax" placeholder="Máx" step="0.1">
+                    </div>
+                </div>
+            </div>
+            <div class="filters-actions">
+                <button id="applyFilters" class="btn-primary">Aplicar Filtros</button>
+                <button id="clearFilters" class="btn-secondary">Limpar Filtros</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ordenação -->
+    <section class="sort-section">
+        <label>Ordenar por:</label>
+        <select id="sortIndicator">
+            <option value="ticker">Ticker (A-Z)</option>
+            <option value="Cotacao">Cotação</option>
+            <option value="P/L">P/L</option>
+            <option value="P/VP">P/VP</option>
+            <option value="DY">Dividend Yield</option>
+            <option value="ROE">ROE</option>
+            <option value="ROIC">ROIC</option>
+            <option value="Mrg.Liq.">Margem Líquida</option>
+            <option value="Liq.Corr.">Liquidez Corrente</option>
+            <option value="Div.Brut/Pat.">Dív.Bruta/Patrim.</option>
+            <option value="Cresc.5anos">Cresc. 5 anos</option>
+            <option value="EV/EBIT">EV/EBIT</option>
+        </select>
+        <select id="sortOrder">
+            <option value="asc">Crescente</option>
+            <option value="desc">Decrescente</option>
+        </select>
+    </section>
+
+    <section class="content-wrapper">
+        <aside class="stock-list-section">
+            <h2>Empresas</h2>
+            <div class="stock-list" id="stockList">
+                <div class="loading">Carregando dados...</div>
+            </div>
+        </aside>
+
+        <section class="details-section">
+            <h2>Detalhes da Empresa</h2>
+            <div id="stockDetails" class="stock-details">
+                <div class="placeholder">
+                    <p>Selecione uma empresa na lista ao lado para ver os detalhes</p>
+                </div>
+            </div>
+        </section>
+    </section>
+
+    <!-- Comparação -->
+    <section class="comparison-section" id="comparisonSection" style="display: none;">
+        <h2>Comparativo de Empresas Selecionadas</h2>
+        <div class="comparison-actions">
+            <button id="clearComparison" class="btn-secondary">Limpar Seleção</button>
+        </div>
+        <div class="comparison-table-wrapper">
+            <table id="comparisonTable" class="comparison-table">
+                <thead id="comparisonHead"></thead>
+                <tbody id="comparisonBody"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Gráficos Comparativos -->
+    <section class="charts-section" id="chartsSection" style="display: none;">
+        <h2>Gráficos Comparativos</h2>
+        <div class="chart-controls">
+            <label>Indicador:</label>
+            <select id="chartIndicator">
+                <option value="Cotacao">Cotação</option>
+                <option value="P/L">P/L</option>
+                <option value="P/VP">P/VP</option>
+                <option value="DY" selected>Dividend Yield</option>
+                <option value="ROE">ROE</option>
+                <option value="ROIC">ROIC</option>
+                <option value="Mrg.Liq.">Margem Líquida</option>
+                <option value="Liq.Corr.">Liquidez Corrente</option>
+                <option value="EV/EBIT">EV/EBIT</option>
+            </select>
+        </div>
+        <div class="charts-grid">
+            <div class="chart-container">
+                <canvas id="barChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="radarChart"></canvas>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% endblock %}

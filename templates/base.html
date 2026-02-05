@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fundamentus - {% block title %}Análise de Ações{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Navegação Principal -->
+    <nav class="main-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <span class="logo-icon">📊</span>
+                <span class="logo-text">Fundamentus</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/" class="{% if active_page == 'home' %}active{% endif %}">Início</a></li>
+                <li><a href="/fundamentos" class="{% if active_page == 'fundamentos' %}active{% endif %}">Fundamentos</a></li>
+                <li><a href="/valuation" class="{% if active_page == 'valuation' %}active{% endif %}">Valuation</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>Dados extraídos de <a href="http://www.fundamentus.com.br" target="_blank">fundamentus.com.br</a> e <a href="https://brapi.dev" target="_blank">brapi.dev</a></p>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

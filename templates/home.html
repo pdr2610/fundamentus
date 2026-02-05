@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Hub de Notícias{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <h1>Bem-vindo ao Fundamentus</h1>
+        <p class="hero-subtitle">Acompanhe as principais empresas do Ibovespa em tempo real</p>
+    </section>
+
+    <!-- Índices -->
+    <section class="indices-section">
+        <div class="indices-grid" id="indicesGrid">
+            <div class="index-card loading-pulse">
+                <span class="index-name">IBOV</span>
+                <span class="index-value">--</span>
+                <span class="index-change">--</span>
+            </div>
+            <div class="index-card loading-pulse">
+                <span class="index-name">IFIX</span>
+                <span class="index-value">--</span>
+                <span class="index-change">--</span>
+            </div>
+            <div class="index-card loading-pulse">
+                <span class="index-name">USD/BRL</span>
+                <span class="index-value">--</span>
+                <span class="index-change">--</span>
+            </div>
+            <div class="index-card loading-pulse">
+                <span class="index-name">SELIC</span>
+                <span class="index-value">--</span>
+                <span class="index-change">--</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Destaques do Dia -->
+    <section class="highlights-section">
+        <h2>Destaques do Dia</h2>
+        <div class="highlights-grid">
+            <div class="highlight-card winners">
+                <h3>🚀 Maiores Altas</h3>
+                <div class="highlight-list" id="winnersList">
+                    <div class="loading">Carregando...</div>
+                </div>
+            </div>
+            <div class="highlight-card losers">
+                <h3>📉 Maiores Baixas</h3>
+                <div class="highlight-list" id="losersList">
+                    <div class="loading">Carregando...</div>
+                </div>
+            </div>
+            <div class="highlight-card volume">
+                <h3>📊 Maior Volume</h3>
+                <div class="highlight-list" id="volumeList">
+                    <div class="loading">Carregando...</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Principais Ações do Ibovespa -->
+    <section class="main-stocks-section">
+        <h2>Principais Ações do Ibovespa</h2>
+        <div class="stocks-ticker-grid" id="mainStocksGrid">
+            <div class="loading">Carregando cotações...</div>
+        </div>
+    </section>
+
+    <!-- Quick Links -->
+    <section class="quick-links-section">
+        <div class="quick-link-card" onclick="window.location.href='/fundamentos'">
+            <div class="quick-link-icon">📈</div>
+            <h3>Análise Fundamentalista</h3>
+            <p>Explore indicadores como P/L, ROE, DY e mais de 400 empresas</p>
+        </div>
+        <div class="quick-link-card" onclick="window.location.href='/valuation'">
+            <div class="quick-link-icon">💰</div>
+            <h3>Valuation</h3>
+            <p>Calcule o preço justo e avalie oportunidades de investimento</p>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+{% endblock %}
