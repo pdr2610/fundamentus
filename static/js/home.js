@@ -68,18 +68,71 @@ async function loadNews(source = 'all') {
 
 // Carrega os índices principais
 async function loadIndices() {
-    // Para os índices, vamos usar dados simulados ou da brapi
-    // A brapi não fornece índices gratuitamente, então usamos placeholders
     const indicesGrid = document.getElementById('indicesGrid');
 
-    // Remove loading state
-    const cards = indicesGrid.querySelectorAll('.index-card');
-    cards.forEach(card => {
-        card.classList.remove('loading-pulse');
-    });
+    try {
+        const response = await fetch('/api/indices');
+        const data = await response.json();
 
-    // Por enquanto, mostramos indicação de que os índices requerem API premium
-    // Em produção, você integraria com uma API de índices
+        // Ordem dos índices para exibição
+        const indicesOrder = ['IBOV', 'IFIX', 'USD/BRL', 'SELIC'];
+
+        indicesGrid.innerHTML = indicesOrder.map(name => {
+            const index = data[name];
+            if (!index) {
+                return `
+                    <div class="index-card">
+                        <span class="index-name">${name}</span>
+                        <span class="index-value">--</span>
+                        <span class="index-change">Indisponível</span>
+                    </div>
+                `;
+            }
+
+            const price = index.price;
+            const changePercent = index.changePercent || 0;
+            const changeClass = changePercent >= 0 ? 'positive' : 'negative';
+            const changeSign = changePercent >= 0 ? '+' : '';
+
+            // Formatação especial para cada índice
+            let formattedPrice = '--';
+            let formattedChange = '';
+
+            if (name === 'IBOV') {
+                formattedPrice = price ? price.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--';
+                formattedChange = `${changeSign}${changePercent.toFixed(2)}%`;
+            } else if (name === 'USD/BRL') {
+                formattedPrice = price ? `R$ ${price.toFixed(4)}` : '--';
+                formattedChange = `${changeSign}${changePercent.toFixed(2)}%`;
+            } else if (name === 'SELIC') {
+                formattedPrice = price ? `${price.toFixed(2)}%` : '--';
+                formattedChange = 'a.a.';
+            } else if (name === 'IFIX') {
+                formattedPrice = price ? price.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--';
+                formattedChange = price ? `${changeSign}${changePercent.toFixed(2)}%` : 'Indisponível';
+            }
+
+            return `
+                <div class="index-card">
+                    <span class="index-name">${name}</span>
+                    <span class="index-value">${formattedPrice}</span>
+                    <span class="index-change ${changeClass}">${formattedChange}</span>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Erro ao carregar índices:', error);
+        // Remove loading state mesmo em caso de erro
+        const cards = indicesGrid.querySelectorAll('.index-card');
+        cards.forEach(card => {
+            card.classList.remove('loading-pulse');
+            const valueEl = card.querySelector('.index-value');
+            const changeEl = card.querySelector('.index-change');
+            if (valueEl) valueEl.textContent = '--';
+            if (changeEl) changeEl.textContent = 'Erro';
+        });
+    }
 }
 
 // Carrega maiores altas, baixas e volume

@@ -2,7 +2,7 @@
 
 from flask import Flask, jsonify, render_template, request
 from fundamentus import get_data
-from brapi import fetch_quote, fetch_multiple_quotes, format_brapi_data
+from brapi import fetch_quote, fetch_multiple_quotes, format_brapi_data, fetch_indices
 from news import fetch_all_news, fetch_feed, get_available_sources
 from datetime import datetime
 import threading
@@ -184,6 +184,13 @@ IBOVESPA_STOCKS = [
     'BBAS3', 'ITSA4', 'RADL3', 'SUZB3', 'JBSS3', 'GGBR4', 'LREN3', 'RAIL3',
     'EQTL3', 'VIVT3', 'BPAC11', 'PRIO3', 'CSNA3', 'CSAN3', 'MGLU3', 'HAPV3'
 ]
+
+
+@app.route("/api/indices")
+def api_indices():
+    """Retorna dados dos principais índices (IBOV, IFIX, USD/BRL, SELIC)."""
+    indices = fetch_indices()
+    return jsonify(indices)
 
 
 @app.route("/api/ibovespa")

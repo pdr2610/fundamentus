@@ -194,6 +194,74 @@ def get_available_tickers() -> List[str]:
     return []
 
 
+def fetch_indices() -> Dict[str, Dict]:
+    """
+    Busca dados dos principais índices e moedas
+
+    Returns:
+        Dicionário com dados de IBOV, IFIX, USD/BRL, etc.
+    """
+    # Símbolos dos índices na brapi
+    # ^BVSP = Ibovespa, USDBRL=X = Dólar
+    indices_map = {
+        '^BVSP': 'IBOV',
+        'USDBRL=X': 'USD/BRL',
+    }
+
+    results = {}
+
+    for symbol, name in indices_map.items():
+        try:
+            url = f"{BRAPI_BASE_URL}/quote/{symbol}"
+
+            req = urllib.request.Request(
+                url,
+                headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Accept': 'application/json'
+                }
+            )
+
+            with urllib.request.urlopen(req, timeout=10) as response:
+                data = json.loads(response.read().decode('utf-8'))
+
+                if 'results' in data and len(data['results']) > 0:
+                    item = data['results'][0]
+                    results[name] = {
+                        'symbol': symbol,
+                        'name': name,
+                        'price': item.get('regularMarketPrice'),
+                        'change': item.get('regularMarketChange'),
+                        'changePercent': item.get('regularMarketChangePercent'),
+                        'previousClose': item.get('regularMarketPreviousClose')
+                    }
+
+        except Exception as e:
+            print(f"Erro ao buscar índice {symbol}: {e}")
+
+    # Adiciona SELIC e IFIX com valores fixos (não disponíveis na brapi gratuita)
+    # Em produção, esses valores seriam buscados de outra API
+    results['SELIC'] = {
+        'symbol': 'SELIC',
+        'name': 'SELIC',
+        'price': 11.25,
+        'change': 0,
+        'changePercent': 0,
+        'note': 'Taxa anual'
+    }
+
+    results['IFIX'] = {
+        'symbol': 'IFIX',
+        'name': 'IFIX',
+        'price': None,
+        'change': None,
+        'changePercent': None,
+        'note': 'Dados não disponíveis'
+    }
+
+    return results
+
+
 if __name__ == '__main__':
     # Teste básico
     print("Testando API brapi.dev...")
