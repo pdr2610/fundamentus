@@ -36,24 +36,41 @@
         </div>
     </section>
 
-    <!-- Destaques do Dia -->
+    <!-- Notícias do Mercado -->
+    <section class="news-section">
+        <div class="news-header">
+            <h2>Notícias do Mercado</h2>
+            <div class="news-filters">
+                <button class="news-filter active" data-source="all">Todas</button>
+                <button class="news-filter" data-source="braziljournal">Brazil Journal</button>
+                <button class="news-filter" data-source="infomoney">InfoMoney</button>
+                <button class="news-filter" data-source="valor">Valor</button>
+                <button class="news-filter" data-source="seudinheiro">Seu Dinheiro</button>
+            </div>
+        </div>
+        <div class="news-grid" id="newsGrid">
+            <div class="loading">Carregando notícias...</div>
+        </div>
+    </section>
+
+    <!-- Destaques do Mercado -->
     <section class="highlights-section">
-        <h2>Destaques do Dia</h2>
+        <h2>Destaques do Mercado</h2>
         <div class="highlights-grid">
             <div class="highlight-card winners">
-                <h3>🚀 Maiores Altas</h3>
+                <h3>Maiores Altas</h3>
                 <div class="highlight-list" id="winnersList">
                     <div class="loading">Carregando...</div>
                 </div>
             </div>
             <div class="highlight-card losers">
-                <h3>📉 Maiores Baixas</h3>
+                <h3>Maiores Baixas</h3>
                 <div class="highlight-list" id="losersList">
                     <div class="loading">Carregando...</div>
                 </div>
             </div>
             <div class="highlight-card volume">
-                <h3>📊 Maior Volume</h3>
+                <h3>Maior Volume</h3>
                 <div class="highlight-list" id="volumeList">
                     <div class="loading">Carregando...</div>
                 </div>

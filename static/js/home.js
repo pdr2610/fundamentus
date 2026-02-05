@@ -1,10 +1,70 @@
 // home.js - JavaScript para a página inicial (Hub de Notícias)
 
+let currentNewsSource = 'all';
+
 document.addEventListener('DOMContentLoaded', function() {
+    loadNews();
     loadMarketMovers();
     loadMainStocks();
     loadIndices();
+    setupNewsFilters();
 });
+
+// Configura filtros de notícias
+function setupNewsFilters() {
+    const filters = document.querySelectorAll('.news-filter');
+    filters.forEach(filter => {
+        filter.addEventListener('click', function() {
+            // Remove active de todos
+            filters.forEach(f => f.classList.remove('active'));
+            // Adiciona active no clicado
+            this.classList.add('active');
+            // Carrega notícias da fonte selecionada
+            currentNewsSource = this.dataset.source;
+            loadNews(currentNewsSource);
+        });
+    });
+}
+
+// Carrega notícias
+async function loadNews(source = 'all') {
+    const container = document.getElementById('newsGrid');
+    container.innerHTML = '<div class="loading">Carregando notícias...</div>';
+
+    try {
+        let url = '/api/news?limit=5';
+        if (source !== 'all') {
+            url = `/api/news/${source}?limit=10`;
+        }
+
+        const response = await fetch(url);
+        const news = await response.json();
+
+        if (!news || news.length === 0) {
+            container.innerHTML = '<div class="no-data">Nenhuma notícia disponível no momento</div>';
+            return;
+        }
+
+        container.innerHTML = news.slice(0, 12).map(item => `
+            <a href="${item.link}" target="_blank" class="news-card">
+                <div class="news-source">
+                    <span class="source-icon">${item.source_icon}</span>
+                    <span class="source-name">${item.source}</span>
+                </div>
+                <h3 class="news-title">${item.title}</h3>
+                <p class="news-summary">${item.summary || ''}</p>
+                <div class="news-meta">
+                    ${item.category ? `<span class="news-category">${item.category}</span>` : ''}
+                    <span class="news-date">${item.date}</span>
+                </div>
+            </a>
+        `).join('');
+
+    } catch (error) {
+        console.error('Erro ao carregar notícias:', error);
+        container.innerHTML = '<div class="error">Erro ao carregar notícias. Tente novamente.</div>';
+    }
+}
 
 // Carrega os índices principais
 async function loadIndices() {

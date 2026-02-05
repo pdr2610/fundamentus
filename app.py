@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
 from fundamentus import get_data
 from brapi import fetch_quote, fetch_multiple_quotes, format_brapi_data
+from news import fetch_all_news, fetch_feed, get_available_sources
 from datetime import datetime
 import threading
 
@@ -233,6 +234,30 @@ def api_market_movers():
         'losers': sorted_by_change[-5:][::-1],
         'volume': sorted_by_volume[:5]
     })
+
+
+# ========== NOTÍCIAS ==========
+
+@app.route("/api/news")
+def api_news():
+    """Retorna notícias de todas as fontes."""
+    limit = request.args.get('limit', 5, type=int)
+    news = fetch_all_news(limit_per_source=limit)
+    return jsonify(news)
+
+
+@app.route("/api/news/<source>")
+def api_news_source(source):
+    """Retorna notícias de uma fonte específica."""
+    limit = request.args.get('limit', 10, type=int)
+    news = fetch_feed(source, limit=limit)
+    return jsonify(news)
+
+
+@app.route("/api/news/sources")
+def api_news_sources():
+    """Retorna lista de fontes de notícias disponíveis."""
+    return jsonify(get_available_sources())
 
 
 if __name__ == '__main__':
