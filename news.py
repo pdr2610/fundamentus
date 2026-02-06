@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """
 Módulo para buscar notícias de sites financeiros brasileiros via RSS.
+Usa xml.etree para evitar dependências externas.
 """
 
-import feedparser
+import urllib.request
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Optional
 import re
 from html import unescape
+from email.utils import parsedate_to_datetime
 
 # Timezone do Brasil (UTC-3)
 BRAZIL_TZ = timezone(timedelta(hours=-3))
@@ -55,33 +58,47 @@ def clean_html(text: str) -> str:
     return clean
 
 
-def parse_date(entry) -> Optional[datetime]:
-    """Tenta parsear a data de uma entrada RSS e converte para horário de Brasília."""
-    parsed_time = None
+def parse_rss_date(date_str: str) -> Optional[datetime]:
+    """Parseia data de RSS (formato RFC 2822) e converte para horário de Brasília."""
+    if not date_str:
+        return None
 
-    if hasattr(entry, 'published_parsed') and entry.published_parsed:
-        try:
-            parsed_time = entry.published_parsed
-        except:
-            pass
+    try:
+        # Tenta parsear como RFC 2822 (formato padrão de RSS)
+        dt = parsedate_to_datetime(date_str)
+        # Converte para horário de Brasília
+        dt_brazil = dt.astimezone(BRAZIL_TZ)
+        return dt_brazil
+    except Exception:
+        pass
 
-    if not parsed_time and hasattr(entry, 'updated_parsed') and entry.updated_parsed:
-        try:
-            parsed_time = entry.updated_parsed
-        except:
-            pass
+    # Tenta outros formatos comuns
+    formats = [
+        '%Y-%m-%dT%H:%M:%S%z',
+        '%Y-%m-%dT%H:%M:%SZ',
+        '%Y-%m-%d %H:%M:%S',
+        '%d/%m/%Y %H:%M:%S',
+    ]
 
-    if parsed_time:
+    for fmt in formats:
         try:
-            # Cria datetime em UTC (feeds RSS geralmente estão em UTC)
-            dt_utc = datetime(*parsed_time[:6], tzinfo=timezone.utc)
-            # Converte para horário de Brasília
-            dt_brazil = dt_utc.astimezone(BRAZIL_TZ)
+            dt = datetime.strptime(date_str, fmt)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            dt_brazil = dt.astimezone(BRAZIL_TZ)
             return dt_brazil
-        except:
-            pass
+        except ValueError:
+            continue
 
     return None
+
+
+def get_element_text(item, tag: str) -> str:
+    """Extrai texto de um elemento XML."""
+    elem = item.find(tag)
+    if elem is not None and elem.text:
+        return elem.text.strip()
+    return ''
 
 
 def fetch_feed(source_key: str, limit: int = 5) -> List[Dict]:
@@ -93,47 +110,80 @@ def fetch_feed(source_key: str, limit: int = 5) -> List[Dict]:
     news_list = []
 
     try:
-        feed = feedparser.parse(source['url'])
+        req = urllib.request.Request(
+            source['url'],
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'application/rss+xml, application/xml, text/xml'
+            }
+        )
 
-        for entry in feed.entries[:limit]:
+        with urllib.request.urlopen(req, timeout=10) as response:
+            content = response.read().decode('utf-8', errors='ignore')
+
+        # Parse XML
+        root = ET.fromstring(content)
+
+        # Encontra itens (suporta RSS 2.0 e Atom)
+        items = root.findall('.//item')
+        if not items:
+            items = root.findall('.//{http://www.w3.org/2005/Atom}entry')
+
+        for item in items[:limit]:
             # Título
-            title = clean_html(entry.get('title', ''))
+            title = get_element_text(item, 'title')
+            if not title:
+                title = get_element_text(item, '{http://www.w3.org/2005/Atom}title')
+            title = clean_html(title)
             if not title:
                 continue
 
             # Link
-            link = entry.get('link', '')
+            link = get_element_text(item, 'link')
+            if not link:
+                link_elem = item.find('{http://www.w3.org/2005/Atom}link')
+                if link_elem is not None:
+                    link = link_elem.get('href', '')
 
             # Descrição/resumo
-            summary = ''
-            if hasattr(entry, 'summary'):
-                summary = clean_html(entry.summary)
-            elif hasattr(entry, 'description'):
-                summary = clean_html(entry.description)
+            summary = get_element_text(item, 'description')
+            if not summary:
+                summary = get_element_text(item, '{http://www.w3.org/2005/Atom}summary')
+            if not summary:
+                summary = get_element_text(item, '{http://purl.org/rss/1.0/modules/content/}encoded')
+            summary = clean_html(summary)
 
             # Limita o resumo
             if len(summary) > 200:
                 summary = summary[:197] + '...'
 
             # Data
-            pub_date = parse_date(entry)
-            date_str = ''
+            date_str = get_element_text(item, 'pubDate')
+            if not date_str:
+                date_str = get_element_text(item, '{http://www.w3.org/2005/Atom}published')
+            if not date_str:
+                date_str = get_element_text(item, '{http://www.w3.org/2005/Atom}updated')
+
+            pub_date = parse_rss_date(date_str)
+            formatted_date = ''
+            timestamp = 0
             if pub_date:
-                date_str = pub_date.strftime('%d/%m/%Y %H:%M')
+                formatted_date = pub_date.strftime('%d/%m/%Y %H:%M')
+                timestamp = pub_date.timestamp()
 
             # Categoria
-            category = ''
-            if hasattr(entry, 'tags') and entry.tags:
-                category = entry.tags[0].get('term', '')
-            elif hasattr(entry, 'category'):
-                category = entry.category
+            category = get_element_text(item, 'category')
+            if not category:
+                cat_elem = item.find('{http://www.w3.org/2005/Atom}category')
+                if cat_elem is not None:
+                    category = cat_elem.get('term', '')
 
             news_list.append({
                 'title': title,
                 'link': link,
                 'summary': summary,
-                'date': date_str,
-                'timestamp': pub_date.timestamp() if pub_date else 0,
+                'date': formatted_date,
+                'timestamp': timestamp,
                 'category': category,
                 'source': source['name'],
                 'source_key': source_key,
