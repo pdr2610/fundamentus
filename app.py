@@ -2,7 +2,8 @@
 
 from flask import Flask, jsonify, render_template, request
 from fundamentus import get_data
-from brapi import fetch_quote, fetch_multiple_quotes, format_brapi_data, fetch_indices
+from brapi import fetch_quote, fetch_multiple_quotes, format_brapi_data
+from market_data import get_market_indices, get_stock_quotes, get_market_movers
 from news import fetch_all_news, fetch_feed, get_available_sources
 from datetime import datetime
 import threading
@@ -189,27 +190,28 @@ IBOVESPA_STOCKS = [
 @app.route("/api/indices")
 def api_indices():
     """Retorna dados dos principais índices (IBOV, IFIX, USD/BRL, SELIC)."""
-    indices = fetch_indices()
+    indices = get_market_indices()
     return jsonify(indices)
 
 
 @app.route("/api/ibovespa")
 def api_ibovespa():
     """Retorna cotações das principais ações do Ibovespa."""
-    results = []
-    brapi_data = fetch_multiple_quotes(IBOVESPA_STOCKS)
+    # Usa Yahoo Finance para dados mais confiáveis
+    yahoo_data = get_stock_quotes(IBOVESPA_STOCKS)
 
+    results = []
     for ticker in IBOVESPA_STOCKS:
-        if ticker in brapi_data:
-            data = brapi_data[ticker]
+        if ticker in yahoo_data:
+            data = yahoo_data[ticker]
             results.append({
                 'ticker': ticker,
-                'shortName': data.get('shortName', ''),
-                'price': data.get('regularMarketPrice'),
-                'change': data.get('regularMarketChange'),
-                'changePercent': data.get('regularMarketChangePercent'),
-                'volume': data.get('regularMarketVolume'),
-                'marketCap': data.get('marketCap')
+                'shortName': '',  # Yahoo não retorna nome curto
+                'price': data.get('price'),
+                'change': data.get('change'),
+                'changePercent': data.get('changePercent'),
+                'volume': None,
+                'marketCap': None
             })
 
     return jsonify(results)
@@ -218,29 +220,9 @@ def api_ibovespa():
 @app.route("/api/market-movers")
 def api_market_movers():
     """Retorna maiores altas, baixas e volume do dia."""
-    brapi_data = fetch_multiple_quotes(IBOVESPA_STOCKS)
-
-    stocks_list = []
-    for ticker, data in brapi_data.items():
-        if data.get('regularMarketChangePercent') is not None:
-            stocks_list.append({
-                'ticker': ticker,
-                'shortName': data.get('shortName', ''),
-                'price': data.get('regularMarketPrice'),
-                'change': data.get('regularMarketChange'),
-                'changePercent': data.get('regularMarketChangePercent'),
-                'volume': data.get('regularMarketVolume', 0)
-            })
-
-    # Ordenar por variação percentual
-    sorted_by_change = sorted(stocks_list, key=lambda x: x['changePercent'] or 0, reverse=True)
-    sorted_by_volume = sorted(stocks_list, key=lambda x: x['volume'] or 0, reverse=True)
-
-    return jsonify({
-        'winners': sorted_by_change[:5],
-        'losers': sorted_by_change[-5:][::-1],
-        'volume': sorted_by_volume[:5]
-    })
+    # Usa Yahoo Finance para dados mais confiáveis
+    movers = get_market_movers(IBOVESPA_STOCKS)
+    return jsonify(movers)
 
 
 # ========== NOTÍCIAS ==========
