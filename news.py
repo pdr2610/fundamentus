@@ -4,10 +4,13 @@ Módulo para buscar notícias de sites financeiros brasileiros via RSS.
 """
 
 import feedparser
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Optional
 import re
 from html import unescape
+
+# Timezone do Brasil (UTC-3)
+BRAZIL_TZ = timezone(timedelta(hours=-3))
 
 # URLs dos feeds RSS
 RSS_FEEDS = {
@@ -53,17 +56,31 @@ def clean_html(text: str) -> str:
 
 
 def parse_date(entry) -> Optional[datetime]:
-    """Tenta parsear a data de uma entrada RSS."""
+    """Tenta parsear a data de uma entrada RSS e converte para horário de Brasília."""
+    parsed_time = None
+
     if hasattr(entry, 'published_parsed') and entry.published_parsed:
         try:
-            return datetime(*entry.published_parsed[:6])
+            parsed_time = entry.published_parsed
         except:
             pass
-    if hasattr(entry, 'updated_parsed') and entry.updated_parsed:
+
+    if not parsed_time and hasattr(entry, 'updated_parsed') and entry.updated_parsed:
         try:
-            return datetime(*entry.updated_parsed[:6])
+            parsed_time = entry.updated_parsed
         except:
             pass
+
+    if parsed_time:
+        try:
+            # Cria datetime em UTC (feeds RSS geralmente estão em UTC)
+            dt_utc = datetime(*parsed_time[:6], tzinfo=timezone.utc)
+            # Converte para horário de Brasília
+            dt_brazil = dt_utc.astimezone(BRAZIL_TZ)
+            return dt_brazil
+        except:
+            pass
+
     return None
 
 

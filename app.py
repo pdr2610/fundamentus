@@ -3,7 +3,7 @@
 from flask import Flask, jsonify, render_template, request
 from fundamentus import get_data
 from brapi import fetch_quote, fetch_multiple_quotes, format_brapi_data
-from market_data import get_market_indices, get_stock_quotes, get_market_movers
+from market_data import get_market_indices, get_stock_quotes, get_market_movers, fetch_yahoo_chart
 from news import fetch_all_news, fetch_feed, get_available_sources
 from datetime import datetime
 import threading
@@ -223,6 +223,39 @@ def api_market_movers():
     # Usa Yahoo Finance para dados mais confiáveis
     movers = get_market_movers(IBOVESPA_STOCKS)
     return jsonify(movers)
+
+
+# ========== GRÁFICOS ==========
+
+# Mapeamento de símbolos para gráficos
+CHART_SYMBOLS = {
+    'IBOV': '^BVSP',
+    'S&P 500': '^GSPC',
+    'BTC': 'BTC-USD',
+    'USD/BRL': 'USDBRL=X'
+}
+
+
+@app.route("/api/chart/<symbol>")
+def api_chart(symbol):
+    """Retorna dados históricos para gráficos."""
+    period = request.args.get('period', '1mo')
+
+    # Verifica se é um índice conhecido
+    chart_symbol = CHART_SYMBOLS.get(symbol.upper(), symbol)
+
+    # Adiciona .SA para ações brasileiras se necessário
+    if chart_symbol == symbol and not symbol.startswith('^') and '=' not in symbol and '-' not in symbol:
+        if not symbol.upper().endswith('.SA'):
+            chart_symbol = f"{symbol.upper()}.SA"
+
+    chart_data = fetch_yahoo_chart(chart_symbol, period)
+
+    if chart_data:
+        chart_data['displayName'] = symbol.upper()
+        return jsonify(chart_data)
+    else:
+        return jsonify({'error': 'Dados não disponíveis'}), 404
 
 
 # ========== NOTÍCIAS ==========

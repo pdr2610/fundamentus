@@ -328,10 +328,86 @@ def get_ifix_movers() -> List[Dict]:
                 'changePercent': data['changePercent']
             })
 
-    # Ordena por maior variação absoluta (maior movimentação)
-    fiis_sorted = sorted(fiis_list, key=lambda x: abs(x['changePercent']), reverse=True)
+    # Ordena por performance (maior alta primeiro)
+    fiis_sorted = sorted(fiis_list, key=lambda x: x['changePercent'], reverse=True)
 
     return fiis_sorted
+
+
+def fetch_yahoo_chart(symbol: str, period: str = '1mo', interval: str = '1d') -> Optional[Dict]:
+    """
+    Busca dados históricos do Yahoo Finance para gráficos.
+    Períodos: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, max
+    Intervalos: 1m, 5m, 15m, 1h, 1d, 1wk, 1mo
+    """
+    try:
+        # Mapeia períodos para range e interval apropriados
+        period_map = {
+            '1d': ('1d', '5m'),
+            '5d': ('5d', '15m'),
+            '1mo': ('1mo', '1d'),
+            '3mo': ('3mo', '1d'),
+            '6mo': ('6mo', '1d'),
+            '1y': ('1y', '1d'),
+            '2y': ('2y', '1wk'),
+            '5y': ('5y', '1wk'),
+            'max': ('max', '1mo')
+        }
+
+        range_val, interval_val = period_map.get(period, ('1mo', '1d'))
+
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval={interval_val}&range={range_val}"
+
+        req = urllib.request.Request(
+            url,
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'application/json'
+            }
+        )
+
+        with urllib.request.urlopen(req, timeout=15) as response:
+            data = json.loads(response.read().decode('utf-8'))
+
+            result = data.get('chart', {}).get('result', [])
+            if result and len(result) > 0:
+                chart_data = result[0]
+                meta = chart_data.get('meta', {})
+                timestamps = chart_data.get('timestamp', [])
+                indicators = chart_data.get('indicators', {})
+                quote = indicators.get('quote', [{}])[0]
+
+                closes = quote.get('close', [])
+                opens = quote.get('open', [])
+                highs = quote.get('high', [])
+                lows = quote.get('low', [])
+                volumes = quote.get('volume', [])
+
+                # Filtra dados nulos
+                chart_points = []
+                for i, ts in enumerate(timestamps):
+                    if closes[i] is not None:
+                        chart_points.append({
+                            'timestamp': ts,
+                            'close': closes[i],
+                            'open': opens[i] if i < len(opens) else None,
+                            'high': highs[i] if i < len(highs) else None,
+                            'low': lows[i] if i < len(lows) else None,
+                            'volume': volumes[i] if i < len(volumes) else None
+                        })
+
+                return {
+                    'symbol': symbol,
+                    'currency': meta.get('currency', 'BRL'),
+                    'currentPrice': meta.get('regularMarketPrice'),
+                    'previousClose': meta.get('previousClose'),
+                    'data': chart_points
+                }
+
+    except Exception as e:
+        print(f"Erro ao buscar chart {symbol}: {e}")
+
+    return None
 
 
 if __name__ == '__main__':

@@ -108,6 +108,39 @@
 </div>
 {% endblock %}
 
+<!-- Modal de Gráfico -->
+<div id="chartModal" class="chart-modal">
+    <div class="chart-modal-content">
+        <div class="chart-modal-header">
+            <div class="chart-title-section">
+                <h3 id="chartSymbol">--</h3>
+                <div class="chart-price-info">
+                    <span id="chartPrice" class="chart-current-price">--</span>
+                    <span id="chartChange" class="chart-change">--</span>
+                </div>
+            </div>
+            <button class="chart-close-btn" onclick="closeChartModal()">&times;</button>
+        </div>
+        <div class="chart-period-selector">
+            <button class="period-btn active" data-period="1d">1D</button>
+            <button class="period-btn" data-period="5d">5D</button>
+            <button class="period-btn" data-period="1mo">1M</button>
+            <button class="period-btn" data-period="3mo">3M</button>
+            <button class="period-btn" data-period="6mo">6M</button>
+            <button class="period-btn" data-period="1y">1A</button>
+            <button class="period-btn" data-period="5y">5A</button>
+            <button class="period-btn" data-period="max">MAX</button>
+        </div>
+        <div class="chart-container-modal">
+            <canvas id="priceChart"></canvas>
+        </div>
+        <div id="chartLoading" class="chart-loading">
+            <div class="chart-spinner"></div>
+            Carregando dados...
+        </div>
+    </div>
+</div>
+
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/home.js') }}"></script>
 {% endblock %}
