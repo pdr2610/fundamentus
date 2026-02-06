@@ -176,19 +176,18 @@ def get_market_indices() -> Dict[str, Dict]:
     else:
         indices['IBOV'] = {'name': 'IBOV', 'price': None, 'error': 'Dados indisponíveis'}
 
-    # IFIX do Yahoo Finance (código pode variar)
-    # Tenta buscar como IFIX.SA ou usar placeholder
-    ifix = fetch_yahoo_quote('IFIX11.SA')  # ETF que replica o IFIX
-    if ifix:
-        indices['IFIX'] = {
-            'name': 'IFIX',
-            'price': ifix['price'],
-            'change': ifix['change'],
-            'changePercent': ifix['changePercent'],
-            'source': 'Yahoo Finance (IFIX11)'
+    # IVV (S&P 500 ETF) do Yahoo Finance
+    ivv = fetch_yahoo_quote('IVV')
+    if ivv:
+        indices['IVV'] = {
+            'name': 'IVV',
+            'price': ivv['price'],
+            'change': ivv['change'],
+            'changePercent': ivv['changePercent'],
+            'source': 'Yahoo Finance'
         }
     else:
-        indices['IFIX'] = {'name': 'IFIX', 'price': None, 'error': 'Dados indisponíveis'}
+        indices['IVV'] = {'name': 'IVV', 'price': None, 'error': 'Dados indisponíveis'}
 
     # USD/BRL do Banco Central (mais confiável)
     usd = fetch_bcb_usd()
@@ -214,6 +213,19 @@ def get_market_indices() -> Dict[str, Dict]:
             }
         else:
             indices['USD/BRL'] = {'name': 'USD/BRL', 'price': None, 'error': 'Dados indisponíveis'}
+
+    # Bitcoin do Yahoo Finance
+    btc = fetch_yahoo_quote('BTC-USD')
+    if btc:
+        indices['BTC'] = {
+            'name': 'BTC',
+            'price': btc['price'],
+            'change': btc['change'],
+            'changePercent': btc['changePercent'],
+            'source': 'Yahoo Finance'
+        }
+    else:
+        indices['BTC'] = {'name': 'BTC', 'price': None, 'error': 'Dados indisponíveis'}
 
     # SELIC do Banco Central (fonte oficial)
     selic = fetch_bcb_selic()
@@ -274,13 +286,21 @@ def get_market_movers(tickers: List[str]) -> Dict[str, List]:
                 'changePercent': data['changePercent']
             })
 
-    # Ordena por variação
-    sorted_by_change = sorted(stocks_list, key=lambda x: x['changePercent'], reverse=True)
+    # Separa em altas (positivas) e baixas (negativas)
+    winners = [s for s in stocks_list if s['changePercent'] > 0]
+    losers = [s for s in stocks_list if s['changePercent'] < 0]
+
+    # Ordena winners por maior alta e losers por maior queda
+    winners_sorted = sorted(winners, key=lambda x: x['changePercent'], reverse=True)
+    losers_sorted = sorted(losers, key=lambda x: x['changePercent'])  # Menor (mais negativo) primeiro
+
+    # Ordena todos por variação absoluta para volume (maior movimentação)
+    all_sorted = sorted(stocks_list, key=lambda x: abs(x['changePercent']), reverse=True)
 
     return {
-        'winners': sorted_by_change[:5] if len(sorted_by_change) >= 5 else sorted_by_change,
-        'losers': sorted_by_change[-5:][::-1] if len(sorted_by_change) >= 5 else sorted_by_change[::-1],
-        'volume': sorted_by_change[:5]  # Por enquanto usa os mesmos dados
+        'winners': winners_sorted[:5],
+        'losers': losers_sorted[:5],
+        'volume': all_sorted[:5]
     }
 
 

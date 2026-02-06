@@ -30,6 +30,11 @@ RSS_FEEDS = {
         'url': 'https://valor.globo.com/rss/',
         'name': 'Valor Econômico',
         'icon': 'VE'
+    },
+    'neofeed': {
+        'url': 'https://neofeed.com.br/feed/',
+        'name': 'NeoFeed',
+        'icon': 'NF'
     }
 }
 

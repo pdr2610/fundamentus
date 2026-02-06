@@ -75,7 +75,7 @@ async function loadIndices() {
         const data = await response.json();
 
         // Ordem dos índices para exibição
-        const indicesOrder = ['IBOV', 'IFIX', 'USD/BRL', 'SELIC'];
+        const indicesOrder = ['IBOV', 'IVV', 'USD/BRL', 'BTC', 'SELIC'];
 
         indicesGrid.innerHTML = indicesOrder.map(name => {
             const index = data[name];
@@ -101,15 +101,18 @@ async function loadIndices() {
             if (name === 'IBOV') {
                 formattedPrice = price ? price.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--';
                 formattedChange = `${changeSign}${changePercent.toFixed(2)}%`;
+            } else if (name === 'IVV') {
+                formattedPrice = price ? `$ ${price.toFixed(2)}` : '--';
+                formattedChange = `${changeSign}${changePercent.toFixed(2)}%`;
             } else if (name === 'USD/BRL') {
                 formattedPrice = price ? `R$ ${price.toFixed(4)}` : '--';
+                formattedChange = `${changeSign}${changePercent.toFixed(2)}%`;
+            } else if (name === 'BTC') {
+                formattedPrice = price ? `$ ${price.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '--';
                 formattedChange = `${changeSign}${changePercent.toFixed(2)}%`;
             } else if (name === 'SELIC') {
                 formattedPrice = price ? `${price.toFixed(2)}%` : '--';
                 formattedChange = 'a.a.';
-            } else if (name === 'IFIX') {
-                formattedPrice = price ? price.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--';
-                formattedChange = price ? `${changeSign}${changePercent.toFixed(2)}%` : 'Indisponível';
             }
 
             return `
