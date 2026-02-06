@@ -3,6 +3,9 @@
 let currentNewsSource = 'all';
 let currentChartSymbol = '';
 let priceChart = null;
+let currentChartData = null;  // Dados do gráfico atual para cálculos de hover
+let chartFirstPrice = 0;      // Preço inicial do período
+let chartCurrency = 'R$';     // Moeda do gráfico
 
 document.addEventListener('DOMContentLoaded', function() {
     loadNews();
@@ -331,24 +334,14 @@ async function loadChartData(symbol, period) {
             throw new Error(data.error);
         }
 
+        // Armazena dados para uso no hover
+        currentChartData = data;
+        chartCurrency = data.currency === 'USD' ? '$' : 'R$';
+
         // Atualiza preço atual
-        if (data.currentPrice) {
-            const currency = data.currency === 'USD' ? '$' : 'R$';
-            document.getElementById('chartPrice').textContent =
-                `${currency} ${data.currentPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-            // Calcula variação
-            if (data.previousClose && data.data && data.data.length > 0) {
-                const firstPrice = data.data[0].close;
-                const change = data.currentPrice - firstPrice;
-                const changePercent = ((data.currentPrice - firstPrice) / firstPrice) * 100;
-                const changeSign = changePercent >= 0 ? '+' : '';
-                const changeClass = changePercent >= 0 ? 'positive' : 'negative';
-
-                document.getElementById('chartChange').textContent =
-                    `${changeSign}${changePercent.toFixed(2)}%`;
-                document.getElementById('chartChange').className = `chart-change ${changeClass}`;
-            }
+        if (data.currentPrice && data.data && data.data.length > 0) {
+            chartFirstPrice = data.data[0].close;
+            updateChartPriceDisplay(data.currentPrice, chartFirstPrice);
         }
 
         // Renderiza gráfico
@@ -361,6 +354,24 @@ async function loadChartData(symbol, period) {
     }
 }
 
+// Atualiza display de preço e variação do gráfico
+function updateChartPriceDisplay(currentPrice, referencePrice) {
+    const priceEl = document.getElementById('chartPrice');
+    const changeEl = document.getElementById('chartChange');
+
+    priceEl.textContent = `${chartCurrency} ${currentPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    const change = currentPrice - referencePrice;
+    const changePercent = ((currentPrice - referencePrice) / referencePrice) * 100;
+    const changeSign = changePercent >= 0 ? '+' : '';
+    const changeClass = changePercent >= 0 ? 'positive' : 'negative';
+
+    // Mostra valor absoluto e percentual
+    const absChange = Math.abs(change).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    changeEl.textContent = `${changeSign}${chartCurrency} ${absChange} (${changeSign}${changePercent.toFixed(2)}%)`;
+    changeEl.className = `chart-change ${changeClass}`;
+}
+
 // Renderiza gráfico com Chart.js
 function renderChart(data, period) {
     const ctx = document.getElementById('priceChart').getContext('2d');
@@ -371,8 +382,8 @@ function renderChart(data, period) {
     }
 
     // Prepara dados
-    const chartData = data.data || [];
-    const labels = chartData.map(point => {
+    const chartDataPoints = data.data || [];
+    const labels = chartDataPoints.map(point => {
         const date = new Date(point.timestamp * 1000);
         if (period === '1d' || period === '5d') {
             return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -382,7 +393,8 @@ function renderChart(data, period) {
             return date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
         }
     });
-    const prices = chartData.map(point => point.close);
+    const prices = chartDataPoints.map(point => point.close);
+    const timestamps = chartDataPoints.map(point => point.timestamp);
 
     // Determina cor baseado na performance
     const firstPrice = prices[0] || 0;
@@ -390,6 +402,30 @@ function renderChart(data, period) {
     const isPositive = lastPrice >= firstPrice;
     const lineColor = isPositive ? '#10b981' : '#ef4444';
     const bgColor = isPositive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+
+    // Plugin customizado para linha vertical no hover (crosshair)
+    const crosshairPlugin = {
+        id: 'crosshair',
+        afterDraw: (chart) => {
+            if (chart.tooltip?._active?.length) {
+                const ctx = chart.ctx;
+                const activePoint = chart.tooltip._active[0];
+                const x = activePoint.element.x;
+                const topY = chart.scales.y.top;
+                const bottomY = chart.scales.y.bottom;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(x, topY);
+                ctx.lineTo(x, bottomY);
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+    };
 
     // Cria gráfico
     priceChart = new Chart(ctx, {
@@ -411,12 +447,21 @@ function renderChart(data, period) {
                 pointHoverBorderWidth: 2
             }]
         },
+        plugins: [crosshairPlugin],
         options: {
             responsive: true,
             maintainAspectRatio: false,
             interaction: {
                 intersect: false,
                 mode: 'index'
+            },
+            onHover: (event, activeElements) => {
+                if (activeElements.length > 0) {
+                    const index = activeElements[0].index;
+                    const hoveredPrice = prices[index];
+                    // Atualiza display com preço do ponto atual vs primeiro preço
+                    updateChartPriceDisplay(hoveredPrice, firstPrice);
+                }
             },
             plugins: {
                 legend: {
@@ -431,9 +476,28 @@ function renderChart(data, period) {
                     padding: 12,
                     displayColors: false,
                     callbacks: {
+                        title: function(context) {
+                            const index = context[0].dataIndex;
+                            const date = new Date(timestamps[index] * 1000);
+                            if (period === '1d' || period === '5d') {
+                                return date.toLocaleString('pt-BR', {
+                                    day: '2-digit', month: 'short',
+                                    hour: '2-digit', minute: '2-digit'
+                                });
+                            }
+                            return date.toLocaleDateString('pt-BR', {
+                                day: '2-digit', month: 'short', year: 'numeric'
+                            });
+                        },
                         label: function(context) {
+                            const price = context.parsed.y;
+                            const changeFromStart = ((price - firstPrice) / firstPrice) * 100;
+                            const sign = changeFromStart >= 0 ? '+' : '';
                             const currency = data.currency === 'USD' ? '$' : 'R$';
-                            return `${currency} ${context.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                            return [
+                                `${currency} ${price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                                `Variação: ${sign}${changeFromStart.toFixed(2)}%`
+                            ];
                         }
                     }
                 }
@@ -470,6 +534,14 @@ function renderChart(data, period) {
                     }
                 }
             }
+        }
+    });
+
+    // Restaura preço atual quando mouse sai do gráfico
+    const canvas = document.getElementById('priceChart');
+    canvas.addEventListener('mouseleave', () => {
+        if (data.currentPrice) {
+            updateChartPriceDisplay(data.currentPrice, firstPrice);
         }
     });
 }
