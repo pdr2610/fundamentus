@@ -75,7 +75,7 @@ async function loadIndices() {
         const data = await response.json();
 
         // Ordem dos índices para exibição
-        const indicesOrder = ['IBOV', 'IVV', 'USD/BRL', 'BTC', 'SELIC'];
+        const indicesOrder = ['IBOV', 'S&P 500', 'USD/BRL', 'BTC', 'SELIC'];
 
         indicesGrid.innerHTML = indicesOrder.map(name => {
             const index = data[name];
@@ -101,8 +101,8 @@ async function loadIndices() {
             if (name === 'IBOV') {
                 formattedPrice = price ? price.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '--';
                 formattedChange = `${changeSign}${changePercent.toFixed(2)}%`;
-            } else if (name === 'IVV') {
-                formattedPrice = price ? `$ ${price.toFixed(2)}` : '--';
+            } else if (name === 'S&P 500') {
+                formattedPrice = price ? price.toLocaleString('en-US', { maximumFractionDigits: 0 }) : '--';
                 formattedChange = `${changeSign}${changePercent.toFixed(2)}%`;
             } else if (name === 'USD/BRL') {
                 formattedPrice = price ? `R$ ${price.toFixed(4)}` : '--';
@@ -138,7 +138,7 @@ async function loadIndices() {
     }
 }
 
-// Carrega maiores altas, baixas e volume
+// Carrega maiores altas, baixas e destaques IFIX
 async function loadMarketMovers() {
     try {
         const response = await fetch('/api/market-movers');
@@ -146,12 +146,12 @@ async function loadMarketMovers() {
 
         renderHighlightList('winnersList', data.winners, 'winner');
         renderHighlightList('losersList', data.losers, 'loser');
-        renderHighlightList('volumeList', data.volume, 'volume');
+        renderHighlightList('ifixList', data.ifix, 'ifix');
     } catch (error) {
         console.error('Erro ao carregar destaques:', error);
         document.getElementById('winnersList').innerHTML = '<div class="error">Erro ao carregar dados</div>';
         document.getElementById('losersList').innerHTML = '<div class="error">Erro ao carregar dados</div>';
-        document.getElementById('volumeList').innerHTML = '<div class="error">Erro ao carregar dados</div>';
+        document.getElementById('ifixList').innerHTML = '<div class="error">Erro ao carregar dados</div>';
     }
 }
 
@@ -167,13 +167,7 @@ function renderHighlightList(elementId, stocks, type) {
     container.innerHTML = stocks.map(stock => {
         const changeClass = (stock.changePercent || 0) >= 0 ? 'positive' : 'negative';
         const changeSign = (stock.changePercent || 0) >= 0 ? '+' : '';
-
-        let displayValue = '';
-        if (type === 'volume') {
-            displayValue = formatVolume(stock.volume);
-        } else {
-            displayValue = `${changeSign}${(stock.changePercent || 0).toFixed(2)}%`;
-        }
+        const displayValue = `${changeSign}${(stock.changePercent || 0).toFixed(2)}%`;
 
         return `
             <div class="highlight-item" onclick="window.location.href='/fundamentos?ticker=${stock.ticker}'">

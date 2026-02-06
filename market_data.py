@@ -176,18 +176,18 @@ def get_market_indices() -> Dict[str, Dict]:
     else:
         indices['IBOV'] = {'name': 'IBOV', 'price': None, 'error': 'Dados indisponíveis'}
 
-    # IVV (S&P 500 ETF) do Yahoo Finance
-    ivv = fetch_yahoo_quote('IVV')
-    if ivv:
-        indices['IVV'] = {
-            'name': 'IVV',
-            'price': ivv['price'],
-            'change': ivv['change'],
-            'changePercent': ivv['changePercent'],
+    # S&P 500 do Yahoo Finance
+    sp500 = fetch_yahoo_quote('^GSPC')
+    if sp500:
+        indices['S&P 500'] = {
+            'name': 'S&P 500',
+            'price': sp500['price'],
+            'change': sp500['change'],
+            'changePercent': sp500['changePercent'],
             'source': 'Yahoo Finance'
         }
     else:
-        indices['IVV'] = {'name': 'IVV', 'price': None, 'error': 'Dados indisponíveis'}
+        indices['S&P 500'] = {'name': 'S&P 500', 'price': None, 'error': 'Dados indisponíveis'}
 
     # USD/BRL do Banco Central (mais confiável)
     usd = fetch_bcb_usd()
@@ -272,7 +272,7 @@ def get_stock_quotes(tickers: List[str]) -> Dict[str, Dict]:
 
 def get_market_movers(tickers: List[str]) -> Dict[str, List]:
     """
-    Retorna maiores altas, baixas e volumes.
+    Retorna maiores altas, baixas e destaques do IFIX.
     """
     quotes = get_stock_quotes(tickers)
 
@@ -290,18 +290,48 @@ def get_market_movers(tickers: List[str]) -> Dict[str, List]:
     winners = [s for s in stocks_list if s['changePercent'] > 0]
     losers = [s for s in stocks_list if s['changePercent'] < 0]
 
-    # Ordena winners por maior alta e losers por maior queda
+    # Ordena winners por maior alta (decrescente) e losers por maior queda (crescente = mais negativo primeiro)
     winners_sorted = sorted(winners, key=lambda x: x['changePercent'], reverse=True)
-    losers_sorted = sorted(losers, key=lambda x: x['changePercent'])  # Menor (mais negativo) primeiro
+    losers_sorted = sorted(losers, key=lambda x: x['changePercent'])
 
-    # Ordena todos por variação absoluta para volume (maior movimentação)
-    all_sorted = sorted(stocks_list, key=lambda x: abs(x['changePercent']), reverse=True)
+    # Busca destaques do IFIX (FIIs)
+    ifix_movers = get_ifix_movers()
 
     return {
         'winners': winners_sorted[:5],
         'losers': losers_sorted[:5],
-        'volume': all_sorted[:5]
+        'ifix': ifix_movers[:5]
     }
+
+
+# Principais FIIs do IFIX
+IFIX_FUNDS = [
+    'MXRF11', 'HGLG11', 'KNRI11', 'XPLG11', 'BTLG11',
+    'VISC11', 'HSML11', 'XPML11', 'BCFF11', 'BRCR11',
+    'VILG11', 'RBRP11', 'LVBI11', 'PVBI11', 'TRXF11'
+]
+
+
+def get_ifix_movers() -> List[Dict]:
+    """
+    Retorna os FIIs do IFIX com maior movimentação do dia.
+    """
+    quotes = get_stock_quotes(IFIX_FUNDS)
+
+    fiis_list = []
+    for ticker, data in quotes.items():
+        if data.get('price') and data.get('changePercent') is not None:
+            fiis_list.append({
+                'ticker': ticker,
+                'price': data['price'],
+                'change': data['change'],
+                'changePercent': data['changePercent']
+            })
+
+    # Ordena por maior variação absoluta (maior movimentação)
+    fiis_sorted = sorted(fiis_list, key=lambda x: abs(x['changePercent']), reverse=True)
+
+    return fiis_sorted
 
 
 if __name__ == '__main__':
