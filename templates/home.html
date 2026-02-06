@@ -105,11 +105,9 @@
             <p>Calcule o preço justo e avalie oportunidades de investimento</p>
         </div>
     </section>
-</div>
-{% endblock %}
 
-<!-- Modal de Gráfico -->
-<div id="chartModal" class="chart-modal">
+    <!-- Modal de Gráfico -->
+    <div id="chartModal" class="chart-modal">
     <div class="chart-modal-content">
         <div class="chart-modal-header">
             <div class="chart-title-section">
@@ -140,6 +138,8 @@
         </div>
     </div>
 </div>
+</div>
+{% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/home.js') }}"></script>

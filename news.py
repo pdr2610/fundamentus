@@ -84,9 +84,11 @@ def parse_rss_date(date_str: str) -> Optional[datetime]:
         try:
             dt = datetime.strptime(date_str, fmt)
             if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
-            dt_brazil = dt.astimezone(BRAZIL_TZ)
-            return dt_brazil
+                # Feeds brasileiros sem timezone já estão em horário de Brasília
+                dt = dt.replace(tzinfo=BRAZIL_TZ)
+            else:
+                dt = dt.astimezone(BRAZIL_TZ)
+            return dt
         except ValueError:
             continue
 
