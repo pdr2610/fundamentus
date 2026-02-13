@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Hub de Notícias{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <h1>Bem-vindo ao Fundamentus</h1>
+        <p class="hero-subtitle">Acompanhe as principais empresas do Ibovespa em tempo real</p>
+    </section>
+
+    <!-- Índices -->
+    <section class="indices-section">
+        <div class="indices-grid" id="indicesGrid">
+            <div class="index-card loading-pulse">
+                <span class="index-name">IBOV</span>
+                <span class="index-value">--</span>
+                <span class="index-change">--</span>
+            </div>
+            <div class="index-card loading-pulse">
+                <span class="index-name">S&P 500</span>
+                <span class="index-value">--</span>
+                <span class="index-change">--</span>
+            </div>
+            <div class="index-card loading-pulse">
+                <span class="index-name">USD/BRL</span>
+                <span class="index-value">--</span>
+                <span class="index-change">--</span>
+            </div>
+            <div class="index-card loading-pulse">
+                <span class="index-name">BTC</span>
+                <span class="index-value">--</span>
+                <span class="index-change">--</span>
+            </div>
+            <div class="index-card loading-pulse">
+                <span class="index-name">SELIC</span>
+                <span class="index-value">--</span>
+                <span class="index-change">--</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Notícias do Mercado -->
+    <section class="news-section">
+        <div class="news-header">
+            <h2>Notícias do Mercado</h2>
+            <div class="news-filters">
+                <button class="news-filter active" data-source="all">Todas</button>
+                <button class="news-filter" data-source="braziljournal">Brazil Journal</button>
+                <button class="news-filter" data-source="infomoney">InfoMoney</button>
+                <button class="news-filter" data-source="valor">Valor</button>
+                <button class="news-filter" data-source="seudinheiro">Seu Dinheiro</button>
+                <button class="news-filter" data-source="neofeed">NeoFeed</button>
+            </div>
+        </div>
+        <div class="news-grid" id="newsGrid">
+            <div class="loading">Carregando notícias...</div>
+        </div>
+    </section>
+
+    <!-- Destaques do Mercado -->
+    <section class="highlights-section">
+        <h2>Destaques do Mercado</h2>
+        <div class="highlights-grid">
+            <div class="highlight-card winners">
+                <h3>Maiores Altas</h3>
+                <div class="highlight-list" id="winnersList">
+                    <div class="loading">Carregando...</div>
+                </div>
+            </div>
+            <div class="highlight-card losers">
+                <h3>Maiores Baixas</h3>
+                <div class="highlight-list" id="losersList">
+                    <div class="loading">Carregando...</div>
+                </div>
+            </div>
+            <div class="highlight-card ifix">
+                <h3>Destaques IFIX</h3>
+                <div class="highlight-list" id="ifixList">
+                    <div class="loading">Carregando...</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Principais Ações do Ibovespa -->
+    <section class="main-stocks-section">
+        <h2>Principais Ações do Ibovespa</h2>
+        <div class="stocks-ticker-grid" id="mainStocksGrid">
+            <div class="loading">Carregando cotações...</div>
+        </div>
+    </section>
+
+    <!-- Quick Links -->
+    <section class="quick-links-section">
+        <div class="quick-link-card" onclick="window.location.href='/fundamentos'">
+            <div class="quick-link-icon">📈</div>
+            <h3>Análise Fundamentalista</h3>
+            <p>Explore indicadores como P/L, ROE, DY e mais de 400 empresas</p>
+        </div>
+        <div class="quick-link-card" onclick="window.location.href='/valuation'">
+            <div class="quick-link-icon">💰</div>
+            <h3>Valuation</h3>
+            <p>Calcule o preço justo e avalie oportunidades de investimento</p>
+        </div>
+    </section>
+
+    <!-- Modal de Gráfico -->
+    <div id="chartModal" class="chart-modal">
+    <div class="chart-modal-content">
+        <div class="chart-modal-header">
+            <div class="chart-title-section">
+                <h3 id="chartSymbol">--</h3>
+                <div class="chart-price-info">
+                    <span id="chartPrice" class="chart-current-price">--</span>
+                    <span id="chartChange" class="chart-change">--</span>
+                </div>
+            </div>
+            <button class="chart-close-btn" onclick="closeChartModal()">&times;</button>
+        </div>
+        <div class="chart-period-selector">
+            <button class="period-btn active" data-period="1d">1D</button>
+            <button class="period-btn" data-period="5d">5D</button>
+            <button class="period-btn" data-period="1mo">1M</button>
+            <button class="period-btn" data-period="3mo">3M</button>
+            <button class="period-btn" data-period="6mo">6M</button>
+            <button class="period-btn" data-period="1y">1A</button>
+            <button class="period-btn" data-period="5y">5A</button>
+            <button class="period-btn" data-period="max">MAX</button>
+        </div>
+        <div class="chart-container-modal">
+            <canvas id="priceChart"></canvas>
+        </div>
+        <div id="chartLoading" class="chart-loading">
+            <div class="chart-spinner"></div>
+            Carregando dados...
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+{% endblock %}

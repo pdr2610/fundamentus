@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Valuation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <section class="page-header">
+        <h1>Calculadora de Valuation</h1>
+        <p class="page-subtitle">Calcule o preço justo das ações e identifique oportunidades de investimento</p>
+    </section>
+
+    <!-- Seleção de Empresa -->
+    <section class="valuation-selector">
+        <div class="selector-box">
+            <label>Selecione a Empresa:</label>
+            <div class="search-wrapper">
+                <input type="text" id="tickerSearch" placeholder="Digite o ticker (ex: ITUB4)" autocomplete="off">
+                <div class="search-results" id="searchResults"></div>
+            </div>
+            <button id="analyzeBtn" class="btn-primary">Analisar</button>
+        </div>
+    </section>
+
+    <!-- Dados da Empresa -->
+    <section class="company-overview" id="companyOverview" style="display: none;">
+        <div class="overview-header">
+            <div class="company-info">
+                <h2 id="companyTicker">--</h2>
+                <p id="companyName">--</p>
+                <span class="company-sector" id="companySector">--</span>
+            </div>
+            <div class="company-price">
+                <span class="current-price" id="currentPrice">R$ --</span>
+                <span class="price-change" id="priceChange">--</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Métodos de Valuation -->
+    <section class="valuation-methods" id="valuationMethods" style="display: none;">
+        <h2>Métodos de Valuation</h2>
+
+        <div class="methods-grid">
+            <!-- Graham -->
+            <div class="method-card">
+                <div class="method-header">
+                    <h3>📐 Fórmula de Graham</h3>
+                    <span class="method-badge">Valor Intrínseco</span>
+                </div>
+                <div class="method-formula">
+                    VI = √(22.5 × LPA × VPA)
+                </div>
+                <div class="method-inputs">
+                    <div class="input-group">
+                        <label>LPA (Lucro por Ação)</label>
+                        <input type="number" id="grahamLPA" step="0.01" placeholder="Automático">
+                    </div>
+                    <div class="input-group">
+                        <label>VPA (Valor Patrimonial)</label>
+                        <input type="number" id="grahamVPA" step="0.01" placeholder="Automático">
+                    </div>
+                </div>
+                <div class="method-result">
+                    <span class="result-label">Preço Justo:</span>
+                    <span class="result-value" id="grahamResult">R$ --</span>
+                    <span class="result-upside" id="grahamUpside">--</span>
+                </div>
+            </div>
+
+            <!-- Bazin -->
+            <div class="method-card">
+                <div class="method-header">
+                    <h3>💰 Método Bazin</h3>
+                    <span class="method-badge">Dividendos</span>
+                </div>
+                <div class="method-formula">
+                    Preço Justo = DPA / 0.06
+                </div>
+                <div class="method-inputs">
+                    <div class="input-group">
+                        <label>DPA (Dividendo por Ação)</label>
+                        <input type="number" id="bazinDPA" step="0.01" placeholder="Automático">
+                    </div>
+                    <div class="input-group">
+                        <label>Yield Mínimo Desejado (%)</label>
+                        <input type="number" id="bazinYield" value="6" step="0.5">
+                    </div>
+                </div>
+                <div class="method-result">
+                    <span class="result-label">Preço Justo:</span>
+                    <span class="result-value" id="bazinResult">R$ --</span>
+                    <span class="result-upside" id="bazinUpside">--</span>
+                </div>
+            </div>
+
+            <!-- P/L Justo -->
+            <div class="method-card">
+                <div class="method-header">
+                    <h3>📊 P/L Justo</h3>
+                    <span class="method-badge">Múltiplos</span>
+                </div>
+                <div class="method-formula">
+                    Preço Justo = LPA × P/L Justo
+                </div>
+                <div class="method-inputs">
+                    <div class="input-group">
+                        <label>LPA (Lucro por Ação)</label>
+                        <input type="number" id="plLPA" step="0.01" placeholder="Automático">
+                    </div>
+                    <div class="input-group">
+                        <label>P/L Justo (referência: 15)</label>
+                        <input type="number" id="plJusto" value="15" step="0.5">
+                    </div>
+                </div>
+                <div class="method-result">
+                    <span class="result-label">Preço Justo:</span>
+                    <span class="result-value" id="plResult">R$ --</span>
+                    <span class="result-upside" id="plUpside">--</span>
+                </div>
+            </div>
+
+            <!-- Gordon -->
+            <div class="method-card">
+                <div class="method-header">
+                    <h3>📈 Modelo de Gordon</h3>
+                    <span class="method-badge">Crescimento</span>
+                </div>
+                <div class="method-formula">
+                    P = D₁ / (k - g)
+                </div>
+                <div class="method-inputs">
+                    <div class="input-group">
+                        <label>DPA Esperado (próximo ano)</label>
+                        <input type="number" id="gordonDPA" step="0.01" placeholder="Automático">
+                    </div>
+                    <div class="input-group">
+                        <label>Taxa de Desconto (%)</label>
+                        <input type="number" id="gordonK" value="12" step="0.5">
+                    </div>
+                    <div class="input-group">
+                        <label>Crescimento Perpétuo (%)</label>
+                        <input type="number" id="gordonG" value="3" step="0.5">
+                    </div>
+                </div>
+                <div class="method-result">
+                    <span class="result-label">Preço Justo:</span>
+                    <span class="result-value" id="gordonResult">R$ --</span>
+                    <span class="result-upside" id="gordonUpside">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botão Calcular -->
+        <div class="calculate-section">
+            <button id="calculateBtn" class="btn-primary btn-large">Calcular Valuation</button>
+        </div>
+    </section>
+
+    <!-- Resumo do Valuation -->
+    <section class="valuation-summary" id="valuationSummary" style="display: none;">
+        <h2>Resumo da Análise</h2>
+        <div class="summary-grid">
+            <div class="summary-card">
+                <h4>Preço Atual</h4>
+                <span class="summary-value" id="summaryCurrentPrice">R$ --</span>
+            </div>
+            <div class="summary-card highlight">
+                <h4>Preço Justo Médio</h4>
+                <span class="summary-value" id="summaryFairPrice">R$ --</span>
+            </div>
+            <div class="summary-card">
+                <h4>Potencial</h4>
+                <span class="summary-value" id="summaryUpside">--</span>
+            </div>
+            <div class="summary-card">
+                <h4>Recomendação</h4>
+                <span class="summary-value recommendation" id="summaryRecommendation">--</span>
+            </div>
+        </div>
+
+        <!-- Gráfico de Comparação -->
+        <div class="valuation-chart">
+            <canvas id="valuationChart"></canvas>
+        </div>
+    </section>
+
+    <!-- Indicadores Fundamentalistas -->
+    <section class="fundamentals-recap" id="fundamentalsRecap" style="display: none;">
+        <h2>Indicadores Fundamentalistas</h2>
+        <div class="fundamentals-grid" id="fundamentalsGrid">
+            <!-- Preenchido via JavaScript -->
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/valuation.js') }}"></script>
+{% endblock %}
