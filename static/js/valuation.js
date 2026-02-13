@@ -124,7 +124,7 @@ function displayStockInfo() {
     document.getElementById('companySector').textContent = sector;
 
     // Preço atual
-    const currentPrice = data.brapi?.regularMarketPrice || data['Cotação'] || 0;
+    const currentPrice = data.brapi?.regularMarketPrice || data['Cotacao'] || 0;
     document.getElementById('currentPrice').textContent = `R$ ${currentPrice.toFixed(2)}`;
 
     // Variação
@@ -139,21 +139,31 @@ function displayStockInfo() {
 function populateInputs() {
     const data = currentStockData;
 
-    // LPA (Lucro por Ação)
+    // LPA (Lucro por Ação) - agora vem calculado da API
     const lpa = data['LPA'] || 0;
     document.getElementById('grahamLPA').value = lpa.toFixed(2);
     document.getElementById('plLPA').value = lpa.toFixed(2);
 
-    // VPA (Valor Patrimonial por Ação)
+    // VPA (Valor Patrimonial por Ação) - agora vem calculado da API
     const vpa = data['VPA'] || 0;
     document.getElementById('grahamVPA').value = vpa.toFixed(2);
 
-    // DPA (Dividendo por Ação) - calculado a partir do DY e cotação
-    const dy = data['DY'] || 0;
-    const cotacao = data.brapi?.regularMarketPrice || data['Cotação'] || 0;
-    const dpa = (dy / 100) * cotacao;
+    // DPA (Dividendo por Ação) - agora vem calculado da API
+    const dpa = data['DPA'] || 0;
     document.getElementById('bazinDPA').value = dpa.toFixed(2);
-    document.getElementById('gordonDPA').value = (dpa * 1.03).toFixed(2); // DPA esperado com crescimento
+
+    // DPA esperado próximo ano (com crescimento de 3%)
+    const cresc5anos = data['Cresc.5anos'] || 0;
+    const taxaCrescimento = cresc5anos > 0 ? Math.min(cresc5anos, 0.10) : 0.03; // máx 10%, default 3%
+    document.getElementById('gordonDPA').value = (dpa * (1 + taxaCrescimento)).toFixed(2);
+
+    // Atualiza taxa de crescimento no Gordon baseado nos dados históricos
+    if (cresc5anos > 0 && cresc5anos < 0.15) {
+        document.getElementById('gordonG').value = (cresc5anos * 100).toFixed(1);
+    }
+
+    // Auto-calcula ao preencher
+    calculateValuation();
 }
 
 // Mostra seções ocultas
@@ -171,18 +181,22 @@ function displayFundamentals() {
     const grid = document.getElementById('fundamentalsGrid');
 
     const indicators = [
+        { label: 'Cotação', value: data.brapi?.regularMarketPrice || data['Cotacao'], format: 'currency' },
+        { label: 'LPA', value: data['LPA'], format: 'currency' },
+        { label: 'VPA', value: data['VPA'], format: 'currency' },
+        { label: 'DPA', value: data['DPA'], format: 'currency' },
         { label: 'P/L', value: data['P/L'], format: 'decimal' },
         { label: 'P/VP', value: data['P/VP'], format: 'decimal' },
         { label: 'DY', value: data['DY'], format: 'percent' },
         { label: 'ROE', value: data['ROE'], format: 'percent' },
         { label: 'ROIC', value: data['ROIC'], format: 'percent' },
-        { label: 'Margem Líquida', value: data['Marg. Líquida'], format: 'percent' },
-        { label: 'Dív. Líq./EBIT', value: data['Dív. Líq./EBIT'], format: 'decimal' },
-        { label: 'LPA', value: data['LPA'], format: 'currency' },
-        { label: 'VPA', value: data['VPA'], format: 'currency' },
-        { label: 'Cotação', value: data.brapi?.regularMarketPrice || data['Cotação'], format: 'currency' },
-        { label: 'Cresc. 5 anos', value: data['Cresc. 5 anos'], format: 'percent' },
-        { label: 'Liq. Corrente', value: data['Liq. Corrente'], format: 'decimal' }
+        { label: 'Margem Líquida', value: data['Mrg.Liq.'], format: 'percent' },
+        { label: 'Margem EBIT', value: data['Mrg.Ebit'], format: 'percent' },
+        { label: 'EV/EBIT', value: data['EV/EBIT'], format: 'decimal' },
+        { label: 'EV/EBITDA', value: data['EV/EBITDA'], format: 'decimal' },
+        { label: 'Dív.Bruta/Pat.', value: data['Div.Brut/Pat.'], format: 'decimal' },
+        { label: 'Liq. Corrente', value: data['Liq.Corr.'], format: 'decimal' },
+        { label: 'Cresc. 5 anos', value: data['Cresc.5anos'], format: 'percent' }
     ];
 
     grid.innerHTML = indicators.map(ind => {
@@ -212,11 +226,10 @@ function displayFundamentals() {
 // Calcula valuation
 function calculateValuation() {
     if (!currentStockData) {
-        alert('Selecione uma ação primeiro');
-        return;
+        return; // Silencioso se não há dados ainda
     }
 
-    const currentPrice = currentStockData.brapi?.regularMarketPrice || currentStockData['Cotação'] || 0;
+    const currentPrice = currentStockData.brapi?.regularMarketPrice || currentStockData['Cotacao'] || 0;
 
     // Graham
     const grahamLPA = parseFloat(document.getElementById('grahamLPA').value) || 0;

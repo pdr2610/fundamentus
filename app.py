@@ -63,13 +63,36 @@ def get_brapi_data(ticker: str):
 
 
 def combine_stock_data(ticker: str, fundamentus_data: dict, brapi_data: dict = None):
-    """Combina dados do Fundamentus com dados da brapi.dev."""
+    """Combina dados do Fundamentus com dados da brapi.dev e calcula indicadores derivados."""
+
+    # Preço atual (prioriza brapi se disponível)
+    cotacao = fundamentus_data.get('Cotacao', 0)
+    if brapi_data and brapi_data.get('regularMarketPrice'):
+        cotacao = brapi_data.get('regularMarketPrice')
+
+    # Calcula LPA (Lucro por Ação) = Cotação / P/L
+    pl = fundamentus_data.get('P/L', 0)
+    lpa = cotacao / pl if pl and pl != 0 else 0
+
+    # Calcula VPA (Valor Patrimonial por Ação) = Cotação / P/VP
+    pvp = fundamentus_data.get('P/VP', 0)
+    vpa = cotacao / pvp if pvp and pvp != 0 else 0
+
+    # Calcula DPA (Dividendo por Ação) = Cotação * DY
+    dy = fundamentus_data.get('DY', 0)
+    dpa = cotacao * dy if dy else 0
+
     combined = {
         'ticker': ticker,
         'source': 'fundamentus',
 
         # Dados do Fundamentus
-        **fundamentus_data
+        **fundamentus_data,
+
+        # Indicadores calculados para Valuation
+        'LPA': round(lpa, 2),
+        'VPA': round(vpa, 2),
+        'DPA': round(dpa, 2),
     }
 
     if brapi_data:
